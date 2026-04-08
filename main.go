@@ -102,22 +102,23 @@ func (l *Locker) Init() error {
 }
 
 // update writes the current process ID to the lockfile.
-func (l *Locker) update() {
+func (l *Locker) update() error {
 	if l.lockfile == nil {
 		err := l.create()
 		if err != nil {
 			fmt.Println("a.Create error: no pid number found")
-			return
+			return err
 		}
 	}
 
 	n, err := l.lockfile.Write([]byte(strconv.Itoa(l.pid)))
 	if err != nil {
 		fmt.Printf("lockFile.Write error %s\n", err)
-		return
+		return err
 	}
 
 	fmt.Printf("%d bytes written to lockfile\n", n)
+	return nil
 }
 
 // create creates a new lockfile
