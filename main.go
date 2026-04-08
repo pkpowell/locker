@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 
 	"github.com/shirou/gopsutil/process"
@@ -15,31 +16,37 @@ func main() {
 }
 
 type Locker struct {
-	pid          int
-	lockfile     *os.File
-	LockfileName string
+	pid      int
+	lockfile *os.File
+	file     string
 }
 
-func (a *Locker) checkPID() error {
+func New(lockfileName string, lockfilePath string) *Locker {
+	return &Locker{
+		file: path.Join(lockfilePath, lockfileName),
+	}
+}
+
+func (l *Locker) Init() error {
 	var err error
 
-	a.pid = os.Getpid()
+	l.pid = os.Getpid()
 
-	a.lockfile, err = os.Open(a.LockfileName)
+	l.lockfile, err = os.Open(l.file)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			a.Create()
-			a.Update()
-			a.lockfile.Close()
+			l.create()
+			l.update()
+			l.lockfile.Close()
 		} else {
 			return err
 		}
 		return nil
 	}
 
-	defer a.lockfile.Close()
+	defer l.lockfile.Close()
 
-	sc := bufio.NewScanner(a.lockfile)
+	sc := bufio.NewScanner(l.lockfile)
 	if sc.Scan() {
 		line := sc.Text()
 
@@ -62,8 +69,8 @@ func (a *Locker) checkPID() error {
 				return err
 				// os.Exit(1)
 			}
-			a.Create()
-			a.Update()
+			l.create()
+			l.update()
 
 			return nil
 		}
@@ -80,13 +87,13 @@ func (a *Locker) checkPID() error {
 			// os.Exit(1)
 		}
 
-		if isRunning && name == a.LockfileName {
-			// Warnf("%s, pid %d is running. Exiting", name, num)
+		if isRunning && name == l.file {
+			fmt.Printf("%s, pid %d is running. Exiting\n", name, num)
 			return err
 			// os.Exit(1)
 		}
 
-		a.Update()
+		l.update()
 
 	} else {
 		fmt.Println("no pid number found")
@@ -94,15 +101,17 @@ func (a *Locker) checkPID() error {
 	return nil
 }
 
-func (a *Locker) Update() {
-	if a.lockfile == nil {
-		err := a.Create()
+// update writes the current process ID to the lockfile.
+func (l *Locker) update() {
+	if l.lockfile == nil {
+		err := l.create()
 		if err != nil {
-
+			fmt.Println("a.Create error: no pid number found")
+			return
 		}
 	}
 
-	n, err := a.lockfile.Write([]byte(strconv.Itoa(a.pid)))
+	n, err := l.lockfile.Write([]byte(strconv.Itoa(l.pid)))
 	if err != nil {
 		fmt.Printf("lockFile.Write error %s\n", err)
 		return
@@ -111,9 +120,10 @@ func (a *Locker) Update() {
 	fmt.Printf("%d bytes written to lockfile\n", n)
 }
 
-func (a *Locker) Create() error {
+// create creates a new lockfile
+func (l *Locker) create() error {
 	var err error
-	a.lockfile, err = os.Create(a.LockfileName)
+	l.lockfile, err = os.Create(l.file)
 	if err != nil {
 		return err
 		// os.Exit(1)
@@ -121,11 +131,6 @@ func (a *Locker) Create() error {
 	return nil
 }
 
-func (a *Locker) Remove() error {
-	err := os.Remove(a.LockfileName)
-	if err != nil {
-		return err
-		// os.Exit(1)
-	}
-	return nil
+func (l *Locker) Remove() error {
+	return os.Remove(l.file)
 }
