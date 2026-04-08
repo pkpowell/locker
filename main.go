@@ -39,10 +39,12 @@ func (l *Locker) Init() error {
 			if err != nil {
 				return err
 			}
-			err = l.update()
+
+			return l.update()
 			if err != nil {
 				return err
 			}
+
 			l.lockfile.Close()
 		} else {
 			return err
@@ -75,9 +77,17 @@ func (l *Locker) Init() error {
 				return err
 				// os.Exit(1)
 			}
-			l.create()
-			l.update()
 
+			err = l.create()
+			if err != nil {
+				return err
+			}
+
+			err = l.update()
+			if err != nil {
+				return err
+			}
+			l.lockfile.Close()
 			return nil
 		}
 
@@ -99,7 +109,7 @@ func (l *Locker) Init() error {
 			// os.Exit(1)
 		}
 
-		l.update()
+		return l.update()
 
 	} else {
 		fmt.Println("no pid number found")
