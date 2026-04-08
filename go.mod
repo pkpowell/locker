@@ -1,4 +1,4 @@
-module locker
+module github.com/pkpowell/locker
 
 go 1.26.1
 
