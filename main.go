@@ -40,7 +40,7 @@ func (l *Locker) Init() error {
 				return err
 			}
 
-			return l.update()
+			err = l.update()
 			if err != nil {
 				return err
 			}
@@ -49,7 +49,7 @@ func (l *Locker) Init() error {
 		} else {
 			return err
 		}
-		return nil
+		return err
 	}
 
 	defer l.lockfile.Close()
@@ -87,7 +87,7 @@ func (l *Locker) Init() error {
 			if err != nil {
 				return err
 			}
-			l.lockfile.Close()
+
 			return nil
 		}
 
