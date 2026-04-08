@@ -35,8 +35,14 @@ func (l *Locker) Init() error {
 	l.lockfile, err = os.Open(l.file)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			l.create()
-			l.update()
+			err = l.create()
+			if err != nil {
+				return err
+			}
+			err = l.update()
+			if err != nil {
+				return err
+			}
 			l.lockfile.Close()
 		} else {
 			return err
