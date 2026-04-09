@@ -12,6 +12,10 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
+var (
+	LOCKFILE_ACTIVE = errors.New("lockfile-active")
+)
+
 type Locker struct {
 	pid      int
 	lockfile *os.File
@@ -112,7 +116,7 @@ func (l *Locker) Init() error {
 
 	// check if the process is running and matches the lockfile name
 	if isRunning && name == l.procname {
-		return fmt.Errorf("%s, pid %d is running. Exiting\n", name, num)
+		return LOCKFILE_ACTIVE
 	}
 
 	return l.updatePID()
