@@ -132,7 +132,7 @@ func (l *Locker) updatePID() (err error) {
 		return fmt.Errorf("Seek error %w", err)
 	}
 
-	n, err := l.lockfile.Write([]byte(strconv.Itoa(l.pid)))
+	_, err = l.lockfile.Write([]byte(strconv.Itoa(l.pid)))
 	if err != nil {
 		return fmt.Errorf("Write error %w", err)
 	}
