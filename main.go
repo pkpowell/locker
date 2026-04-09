@@ -67,6 +67,8 @@ func (l *Locker) Init() error {
 		return err
 	}
 
+	fmt.Printf("lockfile pid %d, current pid %d\n", num, l.pid)
+
 	// check if the process is currently running
 	_, err = process.PidExists(int32(num))
 	if err != nil {
