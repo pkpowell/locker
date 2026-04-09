@@ -17,8 +17,8 @@ var (
 )
 
 type Locker struct {
-	pid      int
 	lockfile *os.File
+	pid      int
 	file     string
 	procname string
 }
@@ -52,6 +52,7 @@ func (l *Locker) Init() error {
 
 	var line string
 	var dataOk bool
+
 	scanner := bufio.NewReader(l.lockfile)
 	line, err = scanner.ReadString('\n')
 	switch err {
@@ -69,7 +70,7 @@ func (l *Locker) Init() error {
 	// } else {
 	// 	return fmt.Errorf("scanner.ReadString error reading from file: %w", err)
 	// }
-	fmt.Println("line", line)
+	// fmt.Println("line", line)
 
 	if len(line) < 1 || !dataOk {
 		return fmt.Errorf("error: no data in lockfile")
@@ -80,17 +81,7 @@ func (l *Locker) Init() error {
 		return fmt.Errorf("strconv.Atoi error for %s: %w", line, err)
 	}
 
-	fmt.Printf("lockfile pid %d, current pid %d\n", num, l.pid)
-
-	// // check if the file pid process is currently running
-	// exists, err := process.PidExists(int32(num))
-	// if err != nil {
-	// 	return err
-	// }
-	// if !exists {
-	// 	fmt.Printf("Process %d not runnung\n", num)
-	// 	return l.updatePID()
-	// }
+	// fmt.Printf("lockfile pid %d, current pid %d\n", num, l.pid)
 
 	proc, err := process.NewProcess(int32(num))
 	// if the process does not exist check for other error. If ok create and update pid
@@ -112,7 +103,7 @@ func (l *Locker) Init() error {
 		return err
 	}
 
-	fmt.Printf("proc name %s l.file %s is runnung %t\n", name, l.procname, isRunning)
+	// fmt.Printf("proc name %s l.file %s is runnung %t\n", name, l.procname, isRunning)
 
 	// check if the process is running and matches the lockfile name
 	if isRunning && name == l.procname {
@@ -146,7 +137,7 @@ func (l *Locker) updatePID() (err error) {
 		return fmt.Errorf("Write error %w", err)
 	}
 
-	fmt.Printf("%d bytes written to lockfile\n", n)
+	// fmt.Printf("%d bytes written to lockfile\n", n)
 	return nil
 }
 
