@@ -4,12 +4,12 @@ import "testing"
 
 func TestLock(t *testing.T) {
 	l := New("locker.test", "/tmp")
-	defer func() {
-		err := l.Remove()
-		if err != nil {
-			t.Errorf("Remove() error = %s", err)
-		}
-	}()
+	// defer func() {
+	// 	err := l.Remove()
+	// 	if err != nil {
+	// 		t.Errorf("Remove() error = %s", err)
+	// 	}
+	// }()
 
 	t.Log("init 1")
 	err := l.Init()
@@ -24,9 +24,11 @@ func TestLock(t *testing.T) {
 		t.Errorf("Init() error = %s", err)
 	}
 
-	// t.Log("init 3 after remove()")
-	// err = l.Init()
-	// if err != nil {
-	// 	t.Errorf("Lock() error = %s", err)
-	// }
+	l.Remove()
+
+	t.Log("init 3 after remove()")
+	err = l.Init()
+	if err != nil {
+		t.Errorf("Lock() error = %s", err)
+	}
 }

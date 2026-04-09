@@ -72,7 +72,10 @@ func (l *Locker) Init() error {
 	// }
 	// fmt.Println("line", line)
 
-	if len(line) < 1 || !dataOk {
+	if len(line) < 1 {
+		return fmt.Errorf("error: no data in lockfile")
+	}
+	if !dataOk {
 		return fmt.Errorf("error: no data in lockfile")
 	}
 
