@@ -32,7 +32,7 @@ func (l *Locker) Init() error {
 
 	l.pid = os.Getpid()
 
-	l.lockfile, err = os.OpenFile(l.file, os.O_APPEND|os.O_RDWR, 0644)
+	l.lockfile, err = os.OpenFile(l.file, os.O_RDWR, 0644)
 	if err != nil {
 		// if the lockfile doesn't exist, create it
 		if errors.Is(err, os.ErrNotExist) {
