@@ -15,6 +15,7 @@ import (
 var (
 	LOCKFILE_ACTIVE            = errors.New("lockfile-active")
 	LOCKFILE_PERMISSION_DENIED = errors.New("lockfile-permission-denied")
+	LOCKFILE_BAD_PID           = errors.New("lockfile-bad-pid")
 )
 
 type Locker struct {
@@ -46,11 +47,10 @@ func (l *Locker) Init() error {
 			// update pid in lockfile
 			return l.updatePID()
 		}
+
 		// abort on permissions error
 		if errors.Is(err, os.ErrPermission) {
 			return LOCKFILE_PERMISSION_DENIED
-			// update pid in lockfile
-			// return l.updatePID()
 		}
 		return err
 	}
@@ -58,53 +58,37 @@ func (l *Locker) Init() error {
 	defer l.lockfile.Close()
 
 	var line string
-	var dataOk bool
 
 	scanner := bufio.NewReader(l.lockfile)
 	line, err = scanner.ReadString('\n')
 	switch err {
 	case nil:
-		dataOk = true
 	case io.EOF:
-		dataOk = true
 
 	default:
-		dataOk = false
 		return err
 	}
-	// if err == io.EOF {
-	// 	// check that there is only one line
-	// } else {
-	// 	return fmt.Errorf("scanner.ReadString error reading from file: %w", err)
-	// }
-	// fmt.Println("line", line)
 
 	if line == "" {
-		fmt.Println("warn: no data in lockfile")
-		l.updatePID()
-		// return fmt.Errorf("error: no data in lockfile")
-
-	}
-	if !dataOk {
 		fmt.Println("warn: no data in lockfile")
 		l.updatePID()
 	}
 
 	num, err := strconv.Atoi(line)
 	if err != nil {
-		return fmt.Errorf("strconv.Atoi error for %s: %w", line, err)
+		fmt.Printf("strconv.Atoi error for <%s>, %s", line, err)
+		return LOCKFILE_BAD_PID
 	}
-
-	// fmt.Printf("lockfile pid %d, current pid %d\n", num, l.pid)
 
 	proc, err := process.NewProcess(int32(num))
 	// if the process does not exist check for other error. If ok create and update pid
 	if err != nil {
-		if err.Error() != "process does not exist" {
-			return err
+		if errors.Is(err, process.ErrorProcessNotRunning) {
+			// fmt.Printf("process.NewProcess error %s\n", err)
+			return l.updatePID()
 		}
 
-		return l.updatePID()
+		return err
 	}
 
 	name, err := proc.Name()
@@ -116,8 +100,6 @@ func (l *Locker) Init() error {
 	if err != nil {
 		return err
 	}
-
-	// fmt.Printf("proc name %s l.file %s is runnung %t\n", name, l.procname, isRunning)
 
 	// check if the process is running and matches the lockfile name
 	if isRunning && name == l.procname {
