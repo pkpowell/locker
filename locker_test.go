@@ -38,9 +38,9 @@ func TestLock(t *testing.T) {
 		t.Logf("Remove() error = %s", err)
 	}
 
-	// t.Log("init 3 after remove()")
-	// err = l.Init()
-	// if err != nil {
-	// 	t.Errorf("Lock() error = %s", err)
-	// }
+	t.Log("init 3 after remove()")
+	err = l.Init()
+	if err != nil {
+		t.Errorf("Lock() error = %s", err)
+	}
 }

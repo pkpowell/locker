@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	LOCKFILE_ACTIVE = errors.New("lockfile-active")
+	LOCKFILE_ACTIVE            = errors.New("lockfile-active")
+	LOCKFILE_PERMISSION_DENIED = errors.New("lockfile-permission-denied")
 )
 
 type Locker struct {
@@ -45,6 +46,12 @@ func (l *Locker) Init() error {
 			// update pid in lockfile
 			return l.updatePID()
 		}
+		// abort on permissions error
+		if errors.Is(err, os.ErrPermission) {
+			return LOCKFILE_PERMISSION_DENIED
+			// update pid in lockfile
+			// return l.updatePID()
+		}
 		return err
 	}
 
@@ -72,7 +79,7 @@ func (l *Locker) Init() error {
 	// }
 	// fmt.Println("line", line)
 
-	if len(line) < 1 {
+	if line == "" {
 		fmt.Println("warn: no data in lockfile")
 		l.updatePID()
 		// return fmt.Errorf("error: no data in lockfile")
@@ -156,6 +163,10 @@ func (l *Locker) create() error {
 	return err
 }
 
-func (l *Locker) Remove() error {
-	return os.Remove(l.file)
+func (l *Locker) Remove() (err error) {
+	err = os.Remove(l.file)
+	if errors.Is(err, os.ErrPermission) {
+		return LOCKFILE_PERMISSION_DENIED
+	}
+	return
 }
