@@ -38,7 +38,7 @@ func (l *Locker) Init() error {
 
 	l.pid = os.Getpid()
 
-	l.lockfile, err = os.OpenFile(l.file, os.O_RDWR, 0644)
+	l.lockfile, err = os.OpenFile(l.file, os.O_RDWR, 0777)
 	if err != nil {
 		// if the lockfile doesn't exist, create it
 		if errors.Is(err, os.ErrNotExist) {
@@ -73,10 +73,14 @@ func (l *Locker) Init() error {
 	// fmt.Println("line", line)
 
 	if len(line) < 1 {
-		return fmt.Errorf("error: no data in lockfile")
+		fmt.Println("warn: no data in lockfile")
+		l.updatePID()
+		// return fmt.Errorf("error: no data in lockfile")
+
 	}
 	if !dataOk {
-		return fmt.Errorf("error: no data in lockfile")
+		fmt.Println("warn: no data in lockfile")
+		l.updatePID()
 	}
 
 	num, err := strconv.Atoi(line)
@@ -135,12 +139,12 @@ func (l *Locker) updatePID() (err error) {
 		return fmt.Errorf("Seek error %w", err)
 	}
 
-	_, err = l.lockfile.Write([]byte(strconv.Itoa(l.pid)))
+	n, err := l.lockfile.Write([]byte(strconv.Itoa(l.pid)))
 	if err != nil {
 		return fmt.Errorf("Write error %w", err)
 	}
 
-	// fmt.Printf("%d bytes written to lockfile\n", n)
+	fmt.Printf("%d bytes written to lockfile\n", n)
 	return nil
 }
 
