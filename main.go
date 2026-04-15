@@ -25,30 +25,37 @@ type Locker struct {
 	procname string
 }
 
-// New creates a new Locker instance with the given lockfile name and path.
-func New(procname string, lockfilePath string) *Locker {
+// New creates a new Locker instance with the given lockfile name and path. Runs init and returns the Locker and any error.
+func New(procname string, lockfilePath string) (l *Locker, err error) {
+	l = new(procname, lockfilePath)
+	err = l.init()
+
+	return l, err
+}
+
+// new creates a new Locker instance with the given lockfile name and path.
+func new(procname string, lockfilePath string) *Locker {
 	return &Locker{
 		file:     path.Join(lockfilePath, procname),
 		procname: procname,
 	}
 }
 
-// Init initializes the Locker by creating the lockfile if it doesn't exist,
-// or checking if the existing lockfile contains a valid PID.
-func (l *Locker) Init() error {
+// init initializes the Locker by creating the lockfile if it doesn't exist,
+// or checks if an existing lockfile contains a valid PID.
+func (l *Locker) init() error {
 	var err error
 
 	l.pid = os.Getpid()
 
 	l.lockfile, err = os.OpenFile(l.file, os.O_RDWR, 0777)
 	if err != nil {
-		// if the lockfile doesn't exist, create it
+		// if the lockfile doesn't exist, create it and update it
 		if errors.Is(err, os.ErrNotExist) {
-			// update pid in lockfile
 			return l.updatePID()
 		}
 
-		// abort on permissions error
+		// abort on permissions error. Nothing we can do here
 		if errors.Is(err, os.ErrPermission) {
 			return LOCKFILE_PERMISSION_DENIED
 		}
@@ -59,6 +66,7 @@ func (l *Locker) Init() error {
 
 	var line string
 
+	// read first line. Abort if there is more than one line. nil == empty, EOF == one line read
 	scanner := bufio.NewReader(l.lockfile)
 	line, err = scanner.ReadString('\n')
 	switch err {
@@ -69,22 +77,24 @@ func (l *Locker) Init() error {
 		return err
 	}
 
+	// update if line == empty string
 	if line == "" {
 		fmt.Println("warn: no data in lockfile")
 		l.updatePID()
 	}
 
+	// convert string to int. Abort if NaN
 	num, err := strconv.Atoi(line)
 	if err != nil {
 		fmt.Printf("strconv.Atoi error for <%s>, %s", line, err)
 		return LOCKFILE_BAD_PID
 	}
 
+	// get process belonging to pid
 	proc, err := process.NewProcess(int32(num))
 	// if the process does not exist check for other error. If ok create and update pid
 	if err != nil {
 		if errors.Is(err, process.ErrorProcessNotRunning) {
-			// fmt.Printf("process.NewProcess error %s\n", err)
 			return l.updatePID()
 		}
 
