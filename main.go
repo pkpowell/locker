@@ -145,6 +145,10 @@ func (l *Locker) create() error {
 	return err
 }
 
+func (l *Locker) LockfileName() string {
+	return l.file
+}
+
 func (l *Locker) Remove() (err error) {
 	err = os.Remove(l.file)
 	if errors.Is(err, os.ErrPermission) {
