@@ -10,7 +10,7 @@ func TestLock(t *testing.T) {
 	l, err := New("locker.test", "/tmp")
 	if err != nil {
 		if errors.Is(err, LOCKFILE_ACTIVE) {
-			t.Logf("Init1 %s", err)
+			t.Logf("Init1 aborting %s", err)
 		} else {
 			t.Errorf("Init() error = %s", err)
 		}
@@ -20,9 +20,9 @@ func TestLock(t *testing.T) {
 	l, err = New("locker.test", "/tmp")
 	if err != nil {
 		if errors.Is(err, LOCKFILE_ACTIVE) {
-			t.Logf("Init2 %s", err)
+			t.Logf("Init2 aborting %s", err)
 		} else {
-			t.Errorf("Init2 error = %s", err)
+			t.Errorf("Init2 aborting error = %s", err)
 		}
 	}
 

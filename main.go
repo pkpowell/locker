@@ -43,16 +43,14 @@ func new(procname string, lockfilePath string) *Locker {
 
 // init initializes the Locker by creating the lockfile if it doesn't exist,
 // or checks if an existing lockfile contains a valid PID.
-func (l *Locker) init() error {
-	var err error
+func (locker *Locker) init() (err error) {
+	locker.pid = os.Getpid()
 
-	l.pid = os.Getpid()
-
-	l.lockfile, err = os.OpenFile(l.file, os.O_RDWR, 0777)
+	locker.lockfile, err = os.OpenFile(locker.file, os.O_RDWR, 0777)
 	if err != nil {
 		// if the lockfile doesn't exist, create it and update it
 		if errors.Is(err, os.ErrNotExist) {
-			return l.updatePID()
+			return locker.updatePID()
 		}
 
 		// abort on permissions error. Nothing we can do here
@@ -62,13 +60,14 @@ func (l *Locker) init() error {
 		return err
 	}
 
-	defer l.lockfile.Close()
+	defer locker.lockfile.Close()
 
 	var line string
 
 	// read first line. Abort if there is more than one line. nil == empty, EOF == one line read
-	scanner := bufio.NewReader(l.lockfile)
+	scanner := bufio.NewReader(locker.lockfile)
 	line, err = scanner.ReadString('\n')
+
 	switch err {
 	case nil:
 	case io.EOF:
@@ -80,7 +79,7 @@ func (l *Locker) init() error {
 	// update if line == empty string
 	if line == "" {
 		fmt.Println("warn: no data in lockfile")
-		l.updatePID()
+		locker.updatePID()
 	}
 
 	// convert string to int. Abort if NaN
@@ -95,7 +94,7 @@ func (l *Locker) init() error {
 	// if the process does not exist check for other error. If ok create and update pid
 	if err != nil {
 		if errors.Is(err, process.ErrorProcessNotRunning) {
-			return l.updatePID()
+			return locker.updatePID()
 		}
 
 		return err
@@ -112,35 +111,35 @@ func (l *Locker) init() error {
 	}
 
 	// check if the process is running and matches the lockfile name
-	if isRunning && name == l.procname {
+	if isRunning && name == locker.procname {
 		return LOCKFILE_ACTIVE
 	}
 
-	return l.updatePID()
+	return locker.updatePID()
 }
 
 // updatePID writes the current process ID to the lockfile.
-func (l *Locker) updatePID() (err error) {
-	if l.lockfile == nil {
-		err = l.create()
+func (locker *Locker) updatePID() (err error) {
+	if locker.lockfile == nil {
+		err = locker.create()
 		if err != nil {
-			return fmt.Errorf("l.Create error: %w", err)
+			return fmt.Errorf("locker.Create error: %w", err)
 		}
 	}
 
-	err = l.lockfile.Truncate(0)
+	err = locker.lockfile.Truncate(0)
 	if err != nil {
-		return fmt.Errorf("Truncate error %w", err)
+		return fmt.Errorf("locker.lockfile.Truncate error %w", err)
 	}
 
-	_, err = l.lockfile.Seek(0, 0)
+	_, err = locker.lockfile.Seek(0, 0)
 	if err != nil {
-		return fmt.Errorf("Seek error %w", err)
+		return fmt.Errorf("locker.lockfile.Seek error %w", err)
 	}
 
-	n, err := l.lockfile.Write([]byte(strconv.Itoa(l.pid)))
+	n, err := locker.lockfile.Write([]byte(strconv.Itoa(locker.pid)))
 	if err != nil {
-		return fmt.Errorf("Write error %w", err)
+		return fmt.Errorf("locker.lockfile.Write error %w", err)
 	}
 
 	fmt.Printf("%d bytes written to lockfile\n", n)
@@ -148,19 +147,18 @@ func (l *Locker) updatePID() (err error) {
 }
 
 // create creates a new lockfile
-func (l *Locker) create() error {
-	var err error
-	l.lockfile, err = os.Create(l.file)
+func (locker *Locker) create() (err error) {
+	locker.lockfile, err = os.Create(locker.file)
 
 	return err
 }
 
-func (l *Locker) LockfileName() string {
-	return l.file
+func (locker *Locker) LockfileName() string {
+	return locker.file
 }
 
-func (l *Locker) Remove() (err error) {
-	err = os.Remove(l.file)
+func (locker *Locker) Remove() (err error) {
+	err = os.Remove(locker.file)
 	if errors.Is(err, os.ErrPermission) {
 		return LOCKFILE_PERMISSION_DENIED
 	}
