@@ -29,7 +29,7 @@ type Locker struct {
 // New creates a new Locker instance with the given lockfile name and path. Runs init and returns the Locker and any error.
 func New(processName string, lockfilePath string, debug bool) (locker *Locker, err error) {
 	locker = &Locker{
-		file:        path.Join(lockfilePath, processName),
+		file:        path.Join(lockfilePath, processName+".lockfile"),
 		processName: processName,
 		pid:         os.Getpid(),
 		debug:       debug,
