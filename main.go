@@ -23,14 +23,16 @@ type Locker struct {
 	pid         int
 	file        string
 	processName string
+	debug       bool
 }
 
 // New creates a new Locker instance with the given lockfile name and path. Runs init and returns the Locker and any error.
-func New(processName string, lockfilePath string) (locker *Locker, err error) {
+func New(processName string, lockfilePath string) (locker *Locker, err error, debug bool) {
 	locker = &Locker{
 		file:        path.Join(lockfilePath, processName),
 		processName: processName,
 		pid:         os.Getpid(),
+		debug:       debug,
 	}
 
 	err = locker.init()
@@ -43,6 +45,16 @@ func New(processName string, lockfilePath string) (locker *Locker, err error) {
 	return
 }
 
+func printInfo(s string) {
+	fmt.Printf("INFO: %s\n", s)
+}
+
+func (locker *Locker) printDebug(s string) {
+	if locker.debug {
+		fmt.Printf("DEBUG: %s\n", s)
+	}
+}
+
 // init initializes the Locker by creating the lockfile if it doesn't exist,
 // or checks if an existing lockfile contains a valid PID.
 func (locker *Locker) init() (err error) {
@@ -50,11 +62,13 @@ func (locker *Locker) init() (err error) {
 	if err != nil {
 		// if the lockfile doesn't exist, create it and update it
 		if errors.Is(err, os.ErrNotExist) {
+			locker.printDebug("lockfile doesn't exist")
 			return locker.updatePID()
 		}
 
 		// abort on permissions error. Nothing we can do here
 		if errors.Is(err, os.ErrPermission) {
+			locker.printDebug("lockfile permissions error")
 			return LOCKFILE_PERMISSION_DENIED
 		}
 		return err
@@ -78,14 +92,14 @@ func (locker *Locker) init() (err error) {
 
 	// update if line == empty string
 	if line == "" {
-		fmt.Println("warn: no data in lockfile")
+		printInfo("warn: no data in lockfile")
 		locker.updatePID()
 	}
 
 	// convert string to int. Abort if NaN
 	num, err := strconv.Atoi(line)
 	if err != nil {
-		fmt.Printf("strconv.Atoi error for <%s>, %s", line, err)
+		printInfo("strconv.Atoi error for <%s>, %s", line, err)
 		return LOCKFILE_BAD_PID
 	}
 
@@ -94,8 +108,10 @@ func (locker *Locker) init() (err error) {
 	// if the process does not exist check for other error. If ok create and update pid
 	if err != nil {
 		if errors.Is(err, process.ErrorProcessNotRunning) {
+			locker.printDebug("process not running, updating pid")
 			return locker.updatePID()
 		}
+		locker.printDebug("process.NewProcess error")
 
 		return err
 	}
