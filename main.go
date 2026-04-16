@@ -46,13 +46,13 @@ func New(processName string, lockfilePath string, debug bool) (locker *Locker, e
 	return
 }
 
-func printInfo(s ...any) {
-	fmt.Printf("INFO: %v\n", s)
+func printInfo(format string, s ...any) {
+	fmt.Println("INFO: ", fmt.Sprintf(format, s...))
 }
 
-func (locker *Locker) printDebug(s ...any) {
+func (locker *Locker) printDebug(format string, s ...any) {
 	if locker.debug {
-		fmt.Printf("DEBUG: %v\n", s...)
+		fmt.Println("DEBUG: ", fmt.Sprintf(format, s...))
 	}
 }
 
@@ -133,7 +133,7 @@ func (locker *Locker) init() (err error) {
 	// check if the process is running and matches the lockfile name
 	//
 	//
-	locker.printDebug("checking isRunning, name", isRunning, name)
+	locker.printDebug("checking isRunning %t, name %s", isRunning, name)
 	if isRunning && name == locker.processName {
 		locker.printDebug("locker active!")
 		return LOCKFILE_ACTIVE
