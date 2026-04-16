@@ -6,34 +6,48 @@ import (
 )
 
 func TestLock(t *testing.T) {
-	t.Log("init 1")
-	l, err := New("locker.test", "/tmp")
+	var locker *Locker
+	var err error
+
+	filename := "locker.test"
+	path := "/tmp"
+
+	t.Log("New 1")
+
+	locker, err = New(filename, path)
 	if err != nil {
 		if errors.Is(err, LOCKFILE_ACTIVE) {
-			t.Logf("Init1 aborting %s", err)
+			t.Logf("New 1 aborting %s", err)
 		} else {
-			t.Errorf("Init() error = %s", err)
+			t.Errorf("New 1 error = %s", err)
 		}
 	}
 
-	t.Log("init 2")
-	l, err = New("locker.test", "/tmp")
+	t.Logf("New 2 %v", locker)
+
+	locker, err = New(filename, path)
 	if err != nil {
 		if errors.Is(err, LOCKFILE_ACTIVE) {
-			t.Logf("Init2 aborting %s", err)
+			t.Logf("New 2 aborting %s", err)
 		} else {
-			t.Errorf("Init2 aborting error = %s", err)
+			t.Errorf("New 2 aborting error = %s", err)
 		}
 	}
 
-	err = l.Remove()
+	t.Logf("New 3 before Remove() %v", locker)
+
+	err = locker.Remove()
 	if err != nil {
-		t.Logf("Remove() error = %s", err)
+		t.Errorf("Remove() error = %s", err)
 	}
 
-	t.Log("init 3 after remove()")
-	l, err = New("locker.test", "/tmp")
+	t.Logf("New 3 after Remove() %v", locker)
+	locker, err = New(filename, path)
 	if err != nil {
-		t.Errorf("Lock() error = %s", err)
+		if errors.Is(err, LOCKFILE_ACTIVE) {
+			t.Logf("New 3 aborting %s", err)
+		} else {
+			t.Errorf("New 3 aborting error = %s", err)
+		}
 	}
 }

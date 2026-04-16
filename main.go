@@ -19,33 +19,33 @@ var (
 )
 
 type Locker struct {
-	lockfile *os.File
-	pid      int
-	file     string
-	procname string
+	lockfile    *os.File
+	pid         int
+	file        string
+	processName string
 }
 
 // New creates a new Locker instance with the given lockfile name and path. Runs init and returns the Locker and any error.
-func New(procname string, lockfilePath string) (l *Locker, err error) {
-	l = new(procname, lockfilePath)
-	err = l.init()
-
-	return l, err
-}
-
-// new creates a new Locker instance with the given lockfile name and path.
-func new(procname string, lockfilePath string) *Locker {
-	return &Locker{
-		file:     path.Join(lockfilePath, procname),
-		procname: procname,
+func New(processName string, lockfilePath string) (locker *Locker, err error) {
+	locker = &Locker{
+		file:        path.Join(lockfilePath, processName),
+		processName: processName,
+		pid:         os.Getpid(),
 	}
+
+	err = locker.init()
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("New: lockfile=%s\n", locker.GetLockfileName())
+
+	return
 }
 
 // init initializes the Locker by creating the lockfile if it doesn't exist,
 // or checks if an existing lockfile contains a valid PID.
 func (locker *Locker) init() (err error) {
-	locker.pid = os.Getpid()
-
 	locker.lockfile, err = os.OpenFile(locker.file, os.O_RDWR, 0777)
 	if err != nil {
 		// if the lockfile doesn't exist, create it and update it
@@ -111,7 +111,7 @@ func (locker *Locker) init() (err error) {
 	}
 
 	// check if the process is running and matches the lockfile name
-	if isRunning && name == locker.procname {
+	if isRunning && name == locker.processName {
 		return LOCKFILE_ACTIVE
 	}
 
@@ -153,11 +153,15 @@ func (locker *Locker) create() (err error) {
 	return err
 }
 
-func (locker *Locker) LockfileName() string {
+func (locker *Locker) GetLockfileName() string {
 	return locker.file
 }
 
 func (locker *Locker) Remove() (err error) {
+	if locker == nil {
+		return fmt.Errorf("Locker nil")
+	}
+
 	err = os.Remove(locker.file)
 	if errors.Is(err, os.ErrPermission) {
 		return LOCKFILE_PERMISSION_DENIED
