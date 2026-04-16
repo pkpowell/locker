@@ -133,7 +133,7 @@ func (locker *Locker) init() (err error) {
 	// check if the process is running and matches the lockfile name
 	//
 	//
-	locker.printDebug("checking isRunning %t, name %s", isRunning, name)
+	locker.printDebug("checking isRunning %t, name %s, processName %s", isRunning, name, locker.processName)
 	if isRunning && name == locker.processName {
 		locker.printDebug("locker active!")
 		return LOCKFILE_ACTIVE
