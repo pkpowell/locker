@@ -14,7 +14,7 @@ func TestLock(t *testing.T) {
 
 	t.Log("New 1")
 
-	locker, err = New(filename, path)
+	locker, err = New(filename, path, true)
 	if err != nil {
 		if errors.Is(err, LOCKFILE_ACTIVE) {
 			t.Logf("New 1 aborting %s", err)
@@ -25,7 +25,7 @@ func TestLock(t *testing.T) {
 
 	t.Logf("New 2 %v", locker)
 
-	locker, err = New(filename, path)
+	locker, err = New(filename, path, true)
 	if err != nil {
 		if errors.Is(err, LOCKFILE_ACTIVE) {
 			t.Logf("New 2 aborting %s", err)
@@ -42,7 +42,7 @@ func TestLock(t *testing.T) {
 	}
 
 	t.Logf("New 3 after Remove() %v", locker)
-	locker, err = New(filename, path)
+	locker, err = New(filename, path, true)
 	if err != nil {
 		if errors.Is(err, LOCKFILE_ACTIVE) {
 			t.Logf("New 3 aborting %s", err)

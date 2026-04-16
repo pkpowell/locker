@@ -27,7 +27,7 @@ type Locker struct {
 }
 
 // New creates a new Locker instance with the given lockfile name and path. Runs init and returns the Locker and any error.
-func New(processName string, lockfilePath string) (locker *Locker, err error, debug bool) {
+func New(processName string, lockfilePath string, debug bool) (locker *Locker, err error) {
 	locker = &Locker{
 		file:        path.Join(lockfilePath, processName),
 		processName: processName,
@@ -37,19 +37,20 @@ func New(processName string, lockfilePath string) (locker *Locker, err error, de
 
 	err = locker.init()
 	if err != nil {
+		locker.printDebug("init error %s", err.Error())
 		return
 	}
 
-	fmt.Printf("New: lockfile=%s\n", locker.GetLockfileName())
+	printInfo("New: lockfile=%s\n", locker.GetLockfileName())
 
 	return
 }
 
-func printInfo(s string) {
+func printInfo(s ...string) {
 	fmt.Printf("INFO: %s\n", s)
 }
 
-func (locker *Locker) printDebug(s string) {
+func (locker *Locker) printDebug(s ...string) {
 	if locker.debug {
 		fmt.Printf("DEBUG: %s\n", s)
 	}
@@ -87,6 +88,7 @@ func (locker *Locker) init() (err error) {
 	case io.EOF:
 
 	default:
+		locker.printDebug("bufio.NewReader error %s", err.Error())
 		return err
 	}
 
@@ -99,7 +101,7 @@ func (locker *Locker) init() (err error) {
 	// convert string to int. Abort if NaN
 	num, err := strconv.Atoi(line)
 	if err != nil {
-		printInfo("strconv.Atoi error for <%s>, %s", line, err)
+		locker.printDebug("strconv.Atoi error for <%s>, %s", line, err.Error())
 		return LOCKFILE_BAD_PID
 	}
 
@@ -118,19 +120,23 @@ func (locker *Locker) init() (err error) {
 
 	name, err := proc.Name()
 	if err != nil {
+		locker.printDebug("proc.name error %s", err.Error())
 		return err
 	}
 
 	isRunning, err := proc.IsRunning()
 	if err != nil {
+		locker.printDebug("proc isrunning error %s", err.Error())
 		return err
 	}
 
 	// check if the process is running and matches the lockfile name
 	if isRunning && name == locker.processName {
+		locker.printDebug("locker active!")
 		return LOCKFILE_ACTIVE
 	}
 
+	locker.printDebug("no locker issues")
 	return locker.updatePID()
 }
 
